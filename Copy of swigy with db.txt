@@ -1,0 +1,579 @@
+import java.io.File;
+import java.io.FileWriter;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.Scanner;
+public class Main {
+    public static void main(String[] args) throws Exception
+    {
+        DriverManager.registerDriver(new org.postgresql.Driver());
+        Connection co;
+        co=DriverManager.getConnection("jdbc:postgresql://localhost:5432/swigee","postgres","Nithish@28");
+        Statement st=co.createStatement();
+        String str="create table if not exists customer(name varchar(30),number char(10),address varchar(60),pin varchar(20))";
+        st.execute(str);
+        String str1="create table if not exists hotel(serialno serial,name varchar(40),number char(10),location varchar(20),pin varchar(20),opentime int,closetime int)";
+        st.execute(str1);
+        String str2="create table if not exists hotelmenu(name varchar(40),number char(10),location varchar(20),menuno int,menu varchar(30),price int)";
+        st.execute(str2);
+        String str3="create table if not exists bill(serialno int,name varchar(40),number char(10),menu varchar(30),quantity int,price int,total int)";
+        st.execute(str3);
+        Scanner sc= new Scanner(System.in);
+        while (true) {
+            System.out.println("Enter 1 to create new customer login account");
+            System.out.println("Enter 2 for customer login");
+            System.out.println("Enter 3 to create Restaurants login account");
+            System.out.println("Enter 4 for Restaurants login");
+            System.out.println("Enter 5 for admin login");
+            int n = sc.nextInt();
+            switch (n) {
+                case 1:
+                    createaccount obj1 = new createaccount();
+                    obj1.caccount(st);
+                    break;
+                case 2:
+                    customerlogin obj2=new customerlogin();
+                    obj2.loginverification(st);
+                    break;
+                case 3:
+                    restaurantsaccount obj3=new restaurantsaccount();
+                    obj3.raccount(st);
+                    break;
+                case 4:
+                    restaurantslogin obj4=new restaurantslogin();
+                    obj4.loginverification(st);
+                    break;
+                case 5:
+                    adminlogin obj5=new adminlogin();
+                    obj5.adminlo(st);
+            }
+            break;
+        }
+    }
+}
+class createaccount
+{
+    static int flag = 0;
+    static int i=0;
+    static int j=0;
+    Scanner sc = new Scanner(System.in);
+    String name;
+    long number;
+    String pin;
+    String confirmpin;
+    static ResultSet re;
+    public void caccount(Statement st) {
+        int a = 1;
+        while (a == 1) {
+            try {
+                re=st.executeQuery("select name from customer");
+                System.out.println("Enter customer name");
+                name = sc.next();
+                while (re.next())
+                {
+                    if (re.getString(1).equals(name)) {
+                        flag++;
+                        System.out.println("User name already exists!!!!");
+                        break;
+                    }
+                    //System.out.print(i);
+                }
+                if (flag == 0) {
+                    System.out.println("Enter customer mobile number");
+                    number = sc.nextLong();
+                    re=st.executeQuery("select number from customer");
+                    while (re.next()) {
+                        if(Long.parseLong(re.getString(1))==(number)) {
+                            flag++;
+                            System.out.println("User mobile number already exists!!!!");
+                            break;
+                        }
+                    }
+                }
+                if (flag == 0) {
+                    System.out.println("Enter customer pin");
+                    sc.nextLine();
+                    pin = sc.next();
+                    sc.nextLine();
+                    if (pin.matches("^(?=.*[0-9])"+"(?=.*[a-z])(?=.*[A-Z])"+"(?=.*[@#$%^&+=])"+ "(?=\\S+$).{8,20}$")) {
+                        System.out.println("confirm pin");
+                        confirmpin = sc.next();
+                        sc.nextLine();
+                        if (confirmpin.matches("^(?=.*[0-9])"+ "(?=.*[a-z])(?=.*[A-Z])"+ "(?=.*[@#$%^&+=])"+ "(?=\\S+$).{8,20}$")) {
+                            if (pin.equals(confirmpin)) {
+                                System.out.println("Enter customer address");
+                                String address=sc.nextLine();
+                                String str1="insert into customer values('"+name+"',"+number+",'"+address+"','"+pin+"');";
+                                st.execute(str1);
+                            }
+                            else {
+                                flag++;
+                                System.out.println("The entered pin and confirm pin doesn't match");
+                            }
+                        }
+                        else {
+                            flag++;
+                            System.out.println("Enter valid pin");
+                        }
+                    }
+                    else {
+                        flag++;
+                        System.out.println("Enter valid pin");
+                    }
+                }
+              } catch (Exception e) {
+
+            }
+            if(flag>0)
+            {
+                System.out.println("Enter 1 to create your account");
+                a= sc.nextInt();
+                flag=0;
+            }
+            else {
+                flag=0;
+                break;
+              }
+          }
+    }
+}
+class customerlogin {
+    static int i, j, k;
+    private String name;
+    private long number1;
+    private String pin1;
+    static Scanner sc = new Scanner(System.in);
+    static int flag = 0;
+    static private String cname;
+    public String getCname() {
+        return cname;
+    }
+    public void setCname(String cname) {
+        this.cname = cname;
+    }
+    static ArrayList<String> cartproducts = new ArrayList<>();
+    static ArrayList<Integer> cartprice = new ArrayList<>();
+    static ArrayList<String> generalprice = new ArrayList<>();
+    static ArrayList<Integer> quantity = new ArrayList<>();
+    static int total=0;
+    static ResultSet re;
+    void loginverification(Statement st) throws Exception {
+        int a = 1;
+        while (a == 1) {
+            {
+                System.out.println("Enter user name:");
+                name = sc.next();
+                re = st.executeQuery("select number,pin from customer where name='" + name + "';");
+                while (re.next()) {
+                    number1 = Long.parseLong(re.getString(1));
+                    pin1 = re.getString(2);
+                }
+                int a1 = 1;
+                //while (a1 == 1)
+                System.out.println("Enter user mobile number:");
+                long number = sc.nextLong();
+                if (number == number1) {
+                    System.out.println("Enter pin:");
+                    String pin = sc.next();
+                    if (pin.equals(pin1)) {
+                        System.out.println("Welocme " + name);
+                        int isthere = 1;
+                        String na = "";
+                        while (isthere == 1) {
+                            System.out.println("Enter 1 to buy food");
+                            System.out.println("Enter 2 to edit cart");
+                            System.out.println("Enter 3 to pay bill");
+                            int n = sc.nextInt();
+                            switch (n) {
+                                case 1:
+                                    int is = 1;
+                                    while (is == 1) {
+                                        System.out.println("*******************************************************************");
+                                        int i = 0;
+                                        int j = i + 1;
+                                        a = 0;
+                                        String str2 = "select * from hotelmenu;";
+                                        re = st.executeQuery(str2);
+                                        while (re.next()) {
+                                            System.out.println(re.getString(1) + "    " + re.getString(2) + "     " + re.getString(3) + "   " + re.getString(7) + "     " + re.getString(8));
+                                        }
+                                        System.out.println("*******************************************************************");
+                                        i = 0;
+                                        String str3 = "select * from hotel;";
+                                        re = st.executeQuery(str3);
+                                        System.out.println("********************************hiiiiiii***********************************");
+                                        while (re.next()) {
+                                            System.out.println("Enter " + re.getInt(1) + " to order food from " + re.getString(2));
+                                        }
+                                        System.out.println("********************************hiiiiiii***********************************");
+                                        int order = sc.nextInt();
+                                        String sta = "";
+                                        re = st.executeQuery("select name from hotel where serialno=" + order + ";");
+                                        while (re.next()) {
+                                            sta = re.getString(1);
+                                        }
+                                        re = st.executeQuery(str2);
+                                        System.out.println("********************************hellloooooooooo***********************************");
+                                        while (re.next()) {
+                                            if (re.getString(1).equals(sta)) {
+                                                System.out.println(re.getString(1) + "    " + re.getString(2) + "     " + re.getString(3) + "   " + re.getInt(6) + "     " + re.getString(7) + "     " + re.getInt(8));
+                                            }
+                                        }
+                                        System.out.println("********************************hellloooooooooo***********************************");
+                                        int or = sc.nextInt();
+                                        String s = "select menu from hotelmenu where menuno=" + or + "";
+                                        re = st.executeQuery(s);
+                                        while (re.next()) {
+                                            cartproducts.add(re.getString(1));
+                                        }
+                                        System.out.println("Enter how much you need");
+                                        int q = sc.nextInt();
+                                        quantity.add(q);
+                                        String p = ("select price from hotelmenu where menuno=" + or + ";");
+                                        re = st.executeQuery(p);
+                                        while (re.next()) {
+                                            cartprice.add(q * (re.getInt(1)));
+                                        }
+                                        System.out.println("Enter 1 to buy more products else press 2");
+                                        is = sc.nextInt();
+                                    }
+                                    break;
+                                case 2:
+                                    int s = cartproducts.size();
+                                    System.out.println("Enter 1 to remove products");
+                                    System.out.println("Enter 2 to reduce quantity");
+                                    int re = sc.nextInt();
+                                    switch (re) {
+                                        case 1:
+                                            i = 0;
+                                            while (i < s) {
+                                                System.out.println("Enter " + i + " to remove " + cartproducts.get(i) + " from cart");
+                                                i++;
+                                            }
+                                            int rem = sc.nextInt();
+                                            cartproducts.remove(rem);
+                                            cartprice.remove(rem);
+                                            quantity.remove(rem);
+                                            break;
+                                        case 2:
+                                            i = 0;
+                                            while (i < s) {
+                                                System.out.println("Enter " + i + " to reduce the quantity of " + cartproducts.get(i) + " from cart");
+                                                i++;
+                                            }
+                                            rem = sc.nextInt();
+                                            System.out.println("Enter new quantity");
+                                            int qu = sc.nextInt();
+                                            quantity.set(rem, qu);
+                                            break;
+                                    }
+                                    break;
+                                case 3:
+                                    System.out.println("*****************************************************************");
+                                    i = 0;
+                                    j=0;
+                                    try {
+                                        ResultSet r=st.executeQuery("select max(serialno) from bill;");
+                                        while (r.next())
+                                        {
+                                            j=1+r.getInt(1);
+                                        }
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        j=1;
+                                    }
+                                    s = cartproducts.size();
+                                    while (i < s) {
+                                        System.out.println(cartproducts.get(i) + "    " + quantity.get(i));
+                                        total += (cartprice.get(i));
+                                        String str = "insert into bill(serialno,name,number,menu,quantity,price,total) values("+j+",'" + name + "','" + number + "','" + cartproducts.get(i) + "'," + quantity.get(i) + "," + cartprice.get(i) + "," + total + ")";
+                                        st.execute(str);
+                                        i++;
+                                    }
+                                    System.out.println("The total cost of all the products in the cart is: " + total);
+                                    System.out.println("Thanks for the purchase");
+                                    cartprice.clear();
+                                    cartproducts.clear();
+                                    quantity.clear();
+                                    break;
+                            }
+                            System.out.println("Enter 1 to proceed");
+                            isthere=sc.nextInt();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+class restaurantsaccount
+{
+    Scanner sc = new Scanner(System.in);
+    String name;
+    String location;
+    static int flag=0;
+    static int j,k,i=0;
+    String number;
+    String pin;
+    String confirmpin;
+    static ResultSet re;
+    void raccount(Statement st) throws Exception
+    {
+        re=st.executeQuery("select name from hotel");
+        System.out.println("Enter restaurant name");
+        name = sc.nextLine();
+        System.out.println("Enter restaurant location");
+        location=sc.next();
+        while (re.next()) {
+            if (re.getString(1).equals(name)) {
+                while(re.next())
+                {
+                    if(re.getString(3).equals(location))
+                    {
+                        flag++;
+                        System.out.println("Restaurant name already exists!!!!");
+                    }
+                }
+                break;
+            }
+            i++;
+        }
+        if (flag == 0) {
+            System.out.println("Enter restaurants mobile number");
+            number = sc.next();
+            while (re.next()) {
+                if(re.getString(2).equals(number)) {
+                    flag++;
+                    System.out.println("restaurants mobile number already exists!!!!");
+                    break;
+                }
+                j++;
+            }
+        }
+        if (flag == 0) {
+            System.out.println("Enter restaurants pin");
+            sc.nextLine();
+            pin = sc.next();
+            sc.nextLine();
+            if (pin.matches("^(?=.*[0-9])"+"(?=.*[a-z])(?=.*[A-Z])"+"(?=.*[@#$%^&+=])"+ "(?=\\S+$).{8,20}$")) {
+                System.out.println("confirm pin");
+                confirmpin = sc.next();
+                if (confirmpin.matches("^(?=.*[0-9])"+ "(?=.*[a-z])(?=.*[A-Z])"+ "(?=.*[@#$%^&+=])"+ "(?=\\S+$).{8,20}$")) {
+                    if (pin.equals(confirmpin)) {
+                        System.out.println("Enter Restaurants open timing");
+                        int otime=sc.nextInt();
+                        System.out.println("Enter Restaurants close timing");
+                        int ctime=sc.nextInt();
+                        String str2="insert into hotel(name,number,location,pin,opentime,closetime) values('"+name+"',"+number+",'"+location+"','"+pin+"',"+otime+","+ctime+"); ";
+                        st.execute(str2);
+                        int menu=1;
+                        System.out.println("Enter menu and its price");
+                        int i=0;
+                        while(menu==1)
+                        {
+                            System.out.println("Enter dish");
+                            sc.nextLine();
+                            String di=sc.nextLine();
+                            System.out.println("Enter price");
+                            String pr=sc.next();
+                            String str3="insert into hotelmenu values('"+name+"',"+number+",'"+location+"','"+di+"',"+pr+"); ";
+                            st.execute(str3);
+                            System.out.println("Enter 1 to continue adding dishes else enter 2");
+                            menu=sc.nextInt();
+                            i++;
+                        }
+                        System.out.println("Your Restaurant has been successfully registered");
+                    }
+                    else {
+                        flag++;
+                        System.out.println("The entered pin and confirm pin doesn't match");
+                    }
+                }
+                else {
+                    flag++;
+                    System.out.println("Enter valid pin");
+                }
+            }
+            else {
+                flag++;
+                System.out.println("Enter valid pin");
+            }
+        }
+    }
+}
+class restaurantslogin {
+    static int i=0, j=0, k=0,l=0;
+    private String name;
+    private String number;
+    private String pin;
+    private String location;
+    static Scanner sc = new Scanner(System.in);
+    static int flag = 0;
+    static int fla=0;
+    static ResultSet re;
+    void loginverification(Statement st) throws Exception
+    {
+        int a = 1;
+        while (a == 1) {
+            System.out.println("Enter Restaurant name:");
+            name = sc.nextLine();
+            try {
+                re = st.executeQuery("select * from hotel where name='" + name + "';");
+                while (re.next()) {
+                    number = re.getString(3);
+                    location = re.getString(4);
+                    pin = re.getString(5);
+                }
+            }
+            catch (Exception e)
+            {
+                System.out.println("Restaurant name doesn't exists");
+            }
+                System.out.println("Enter Restaurants location:");
+                String location1 = sc.next();
+              if(location1.equals(location))
+              {
+                  System.out.println("Enter Restaurants mobile number:");
+                  String number1 = sc.next();
+                  if(number.equals(number1))
+                  {
+                      System.out.println("Enter pin");
+                      String pin1 = sc.next();
+                        if(pin.equals(pin1))
+                        {
+                            {
+                                System.out.println("Welcome " + name + " Restaurants");
+                                System.out.println("Enter 1 to add dishes to menu");
+                                System.out.println("Enter 2 to change timing");
+                                System.out.println("Enter 3 to remove dishes");
+                                int n = sc.nextInt();
+                                switch (n) {
+                                    case 1:
+                                        int flg = 1;
+                                        if (flg == 1) {
+                                            System.out.println("Enter new dish name");
+                                            String dis = sc.next();
+                                            System.out.println("Enter the price");
+                                            int pr = sc.nextInt();
+                                            j = 0;
+                                            try {
+                                                ResultSet r = st.executeQuery("select max(menuno) from hotelmenu where number='" + number + "';");
+                                                while (r.next()) {
+                                                    j = 1 + r.getInt(1);
+                                                }
+                                            } catch (Exception e) {
+                                                j = 1;
+                                            }
+                                            st.execute("insert into hotelmenu values('" + name + "','" + number + "','" + location + "'," + j + ",'" + dis + "'," + pr + ")");
+                                            System.out.println("******************************************************");
+                                            System.out.println("Your restaurants new dish have been successfully added");
+                                            System.out.println("******************************************************");
+                                        }
+                                        break;
+                                    case 2:
+                                                System.out.println("Enter new open timing");
+                                                int o=sc.nextInt();
+                                                String str="update hotel set opentime ="+o+" where number='"+number+"'";
+                                                st.execute(str);
+                                                System.out.println("Enter new close timing");
+                                                int c=sc.nextInt();
+                                            String str1="update hotel set closetime ="+c+" where number='"+number+"'";
+                                            st.execute(str1);
+                                        System.out.println("******************************************************");
+                                        System.out.println("your restaurant timing has been successfully changed");
+                                        System.out.println("******************************************************");
+                                        break;
+                                    case 3:
+                                                System.out.println("Enter the dish name to remove from the menu");
+                                                String dis = sc.next();
+                                                  try{
+                                                      st.execute("delete from hotelmenu where menu='"+dis+"';");
+                                                        System.out.println("******************************************************");
+                                                        System.out.println("Entered dish is successfully removed");
+                                                        System.out.println("******************************************************");
+                                                        break;
+                                                    }
+                                                  catch (Exception e)
+                                                  {
+                                                      System.out.println("Dish doesn't exists");
+                                                  }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            System.out.println("pin mismatch");
+                        }
+                  }
+                  else {
+                      System.out.println("number mismatch");
+                  }
+              }
+              else
+              {
+                  System.out.println("location mismatch");
+              }
+            a=2;
+        }
+    }
+}
+abstract class admin
+{
+    Scanner sc=new Scanner(System.in);
+    abstract void adminlo(Statement st) throws Exception;
+}
+class adminlogin extends admin
+{
+    static ResultSet re;
+    void adminlo(Statement st) throws Exception
+    {
+        int pin=1234;
+        System.out.println("Enter pin:");
+        int apin=sc.nextInt();
+        if(apin==pin)
+        {
+            System.out.println("Enter 1 to see all hotels");
+            System.out.println("Enter 2 to see all customers");
+            System.out.println("Enter 3 to see all hotel menu");
+            System.out.println("Enter 4 to see all bills");
+            int ch=sc.nextInt();
+            switch (ch)
+            {
+                case 1:
+                    re= st.executeQuery("select * from hotel;");
+                    while (re.next())
+                    {
+                        System.out.println(re.getString(2));
+                    }
+                    break;
+                case 2:
+                    re= st.executeQuery("select * from customer");
+                    System.out.println("******************************************************************************");
+                    while (re.next())
+                    {
+                        System.out.println(re.getString(1));
+                    }
+                    System.out.println("******************************************************************************");
+                    break;
+                case 3:
+                    re=st.executeQuery("select * from hotelmenu");
+                    while (re.next())
+                    {
+                        System.out.println(re.getString(1)+" "+re.getString(2)+" "+re.getString(3)+" "+re.getString(5)+" "+re.getInt(6));
+                    }
+                    break;
+                case 4:
+                    System.out.println("******************************************************************************");
+                    re=st.executeQuery("select * from bill");
+                    while (re.next())
+                    {
+                        System.out.println("bill no:"+re.getInt(1)+" "+re.getString(2)+" "+re.getString(3)+" "+re.getString(4)+" "+re.getInt(5)+" "+re.getInt(6)+"  total:"+re.getInt(7));
+                    }
+                    System.out.println("******************************************************************************");
+                    break;
+            }
+        }
+    }
+}
+
